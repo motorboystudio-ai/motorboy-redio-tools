@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.MediaController
 import android.widget.VideoView
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,10 +57,15 @@ fun ThaiOnlineTvScreen(
     val channels = TvManager.channels
 
     val categories = listOf("ทั้งหมด", "ข่าวสาร & สาระ", "บันเทิง & วาไรตี้", "ละคร & บันเทิง", "ภาพยนตร์ & ซีรีส์", "การศึกษา & รัฐสภา")
-    var selectedCategory by remember { mutableStateOf("ทั้งหมด") }
-    var searchQuery by remember { mutableStateOf("") }
-    var viewMode by remember { mutableStateOf("grid") } // "grid" or "list"
-    var isFullScreen by remember { mutableStateOf(false) }
+    var selectedCategory by rememberSaveable { mutableStateOf("ทั้งหมด") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var viewMode by rememberSaveable { mutableStateOf("grid") } // "grid" or "list"
+    var isFullScreen by rememberSaveable { mutableStateOf(false) }
+
+    // System back exits fullscreen first instead of leaving the whole screen.
+    BackHandler(enabled = isFullScreen) {
+        isFullScreen = false
+    }
 
     val filteredChannels = remember(channels.toList(), selectedCategory, searchQuery) {
         channels.filter { channel ->
@@ -341,20 +348,36 @@ fun TvVideoPlayerCard(
     var hasError by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("tv_video_player_card"),
-        shape = RoundedCornerShape(20.dp),
+        modifier = if (isFullScreen) {
+            Modifier
+                .fillMaxSize()
+                .testTag("tv_video_player_card")
+        } else {
+            Modifier
+                .fillMaxWidth()
+                .testTag("tv_video_player_card")
+        },
+        shape = if (isFullScreen) RoundedCornerShape(0.dp) else RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Black),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isFullScreen) 0.dp else 6.dp
+        )
     ) {
-        Column {
-            // Video Frame (16:9 Aspect Ratio)
+        Column(modifier = if (isFullScreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth()) {
+            // Video Frame: true fullscreen fills the whole screen,
+            // embedded mode keeps the 16:9 aspect ratio.
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(Color.Black)
+                modifier = if (isFullScreen) {
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(Color.Black)
+                } else {
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .background(Color.Black)
+                }
             ) {
                 // Live Stream Video View via AndroidView
                 key(channel.streamUrl, isPlaying) {
@@ -584,18 +607,20 @@ fun TvVideoPlayerCard(
                 }
             }
 
-            // Channel Description & Details
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(16.dp)
-            ) {
-                Text(
-                    channel.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Channel Description & Details (hidden in true fullscreen)
+            if (!isFullScreen) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        channel.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

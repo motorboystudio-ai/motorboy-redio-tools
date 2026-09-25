@@ -6,6 +6,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebSettings
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -35,6 +36,16 @@ fun MovieOnlineScreen(
 
     var customView by remember { mutableStateOf<View?>(null) }
     var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+
+    // System back closes the fullscreen video first instead of leaving the screen.
+    BackHandler(enabled = customView != null) {
+        try {
+            customViewCallback?.onCustomViewHidden()
+        } catch (_: Exception) {
+        }
+        customView = null
+        customViewCallback = null
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
