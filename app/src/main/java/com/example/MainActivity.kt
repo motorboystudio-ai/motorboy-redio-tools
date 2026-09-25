@@ -57,6 +57,7 @@ fun MiniPlayerBar(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .clickable { onOpenScanner() }
             .testTag("mini_player_bar"),
@@ -177,6 +178,7 @@ fun MotorBoyTechApp() {
                         "CDI/ECU Pinout" -> currentScreen = "pinout_library"
                         "Reference Library" -> currentScreen = "pinout_library"
                         "Cloud SQL Database" -> currentScreen = "cloud_sql"
+                        "Movie Online" -> currentScreen = "movie_online"
                         else -> {
                             currentScreen = "manual_viewer"
                         }
@@ -199,6 +201,7 @@ fun MotorBoyTechApp() {
                 "paint_mixing" -> PaintMaintenanceMixingScreen(onBack = { currentScreen = "dashboard" })
                 "pinout_library" -> LibraryScreen(onBack = { currentScreen = "dashboard" })
                 "cloud_sql" -> com.example.ui.CloudSqlScreen(onBack = { currentScreen = "dashboard" })
+                "movie_online" -> com.example.ui.MovieOnlineScreen(onBack = { currentScreen = "dashboard" })
             }
         }
     }
