@@ -23,7 +23,8 @@ enum class ScreenDestination(val route: String, val titleTh: String, val descrip
     CAMERA_SCANNER("camera_scanner", "สแกนกล้องอ่านโค้ด DTC", "สแกนรหัสไฟกระพริบ โค้ดกล่อง ECU"),
     PAINT_GUIDE("paint_guide", "คู่มือซ่อม & ทำสี 2K", "ขั้นตอนขัด พ่นสี รองพื้น เคลียร์โค้ท 2K"),
     PAINT_MIXING("paint_mixing", "ผสมสี & อัตราส่วนช่าง", "คำนวณอัตราส่วนผสมสี 2K, 4:1, 2:1, ตัวทำละลาย"),
-    PINOUT_LIBRARY("pinout_library", "คลังไดอะแกรม & MotorIndy", "วงจรกล่อง CDI, แผ่นชาร์จ, วงจร ECU MotorIndy")
+    PINOUT_LIBRARY("pinout_library", "คลังไดอะแกรม & MotorIndy", "วงจรกล่อง CDI, แผ่นชาร์จ, วงจร ECU MotorIndy"),
+    CLOUD_SQL("cloud_sql", "SQL Cloud Database", "เชื่อมต่อฐานข้อมูล SQL Cloud (MySQL / PostgreSQL)")
 }
 
 data class ChatMessage(
@@ -41,7 +42,7 @@ sealed class AppActionCommand {
 
 object GeminiMechanicService {
     private const val TAG = "GeminiMechanicService"
-    private const val MODEL = "gemini-2.5-flash"
+    private const val MODEL = "gemini-3.6-flash"
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -69,6 +70,7 @@ object GeminiMechanicService {
         [ACTION:NAVIGATE:paint_guide] -> เปิดหน้าคู่มือทำสี 2K
         [ACTION:NAVIGATE:paint_mixing] -> เปิดหน้าสูตรผสมสี
         [ACTION:NAVIGATE:pinout_library] -> เปิดหน้าคลังไดอะแกรม & MotorIndy
+        [ACTION:NAVIGATE:cloud_sql] -> เปิดหน้าฐานข้อมูล SQL Cloud
         [ACTION:RADIO:PLAY] -> สั่งเปิดวิทยุ
         [ACTION:RADIO:PAUSE] -> สั่งปิด/หยุดวิทยุ
 

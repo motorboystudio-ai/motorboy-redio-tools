@@ -51,16 +51,14 @@ fun DashboardScreen(
     val isBookmarked = RadioManager.isBookmarked(currentStation.id)
 
     val features = listOf(
-        FeatureItem("Gemini AI Mechanic", "ช่างบอย AI อเนกประสงค์ สั่งเปิดปิดฟังก์ชัน & วิเคราะห์", Icons.Default.SmartToy),
-        FeatureItem("Service Reminder", "แจ้งเตือนเปลี่ยนน้ำมันเครื่อง & เซอร์วิส", Icons.Default.OilBarrel),
         FeatureItem("Motorcycle Manuals", "คู่มือซ่อมบำรุงตามระยะ ซูมไดอะแกรม & ทีละสเต็ป", Icons.AutoMirrored.Filled.MenuBook),
         FeatureItem("Maintenance Calculator", "ความตึงโซ่ กำลังอัด จูนอากาศ-น้ำมัน & แปลงหน่วย", Icons.Default.Calculate),
         FeatureItem("Thai Online TV", "ทีวีออนไลน์สด IPTV-Org ทั่วไทย 24 ชม.", Icons.Default.LiveTv),
-        FeatureItem("Thai Radio Scanner", "สแกนหาคลื่น & สตรีมมิ่งสดทั่วไทย", Icons.Default.Radar),
         FeatureItem("Camera Scan DTC", "สแกนรหัสข้อผิดพลาดรถ", Icons.Default.CameraAlt),
         FeatureItem("Repair Guides", "คู่มือซ่อม & ทำสีมอเตอร์ไซค์ 2K", Icons.Default.FormatPaint),
         FeatureItem("Paint Mixing & Tools", "เทียบสี ซ่อมผิว ผสม 2K & เครื่องมือ", Icons.Default.ColorLens),
-        FeatureItem("CDI/ECU Pinout", "Wiring diagrams & ไดอะแกรมกล่อง", Icons.Default.Bolt)
+        FeatureItem("CDI/ECU Pinout", "Wiring diagrams & ไดอะแกรมกล่อง", Icons.Default.Bolt),
+        FeatureItem("Cloud SQL Database", "เชื่อมต่อฐานข้อมูล SQL Cloud (MySQL / PostgreSQL)", Icons.Default.Cloud)
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -68,99 +66,98 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
+                .navigationBarsPadding()
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Professional Workshop Header
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "MotorBoy Pro Workshop",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    "☁️ Cloud SQL Active",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer
+                            ) {
+                                Text(
+                                    "🤖 ช่างบอย AI พร้อมใช้งาน",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Build,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-            // Gemini AI Mechanic Assistant Banner
-            item(span = { GridItemSpan(2) }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onFeatureClick("Gemini AI Mechanic") }
-                        .testTag("dashboard_gemini_ai_banner"),
-                    shape = RoundedCornerShape(22.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.SmartToy,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onTertiary,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                        }
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "ช่างบอย AI (Gemini สายช่าง)",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.tertiary
-                                ) {
-                                    Text(
-                                        "สั่งเปิดฟังก์ชันได้",
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onTertiary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "ค้นหาวิธีซ่อม ถามสเปกเครื่อง & สั่งเปิด-ปิดวิทยุ/ฟังก์ชันต่างๆ ได้ทันที",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
-                                maxLines = 2
-                            )
-                        }
-
-                        FilledTonalButton(
-                            onClick = { onFeatureClick("Gemini AI Mechanic") },
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Text("เปิดแชท", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 100.dp)
+             ) {
 
             // Service Reminder Visual Status Card
             item(span = { GridItemSpan(2) }) {
@@ -481,7 +478,7 @@ fun FeatureCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .height(140.dp)
             .testTag("feature_card_${feature.title.lowercase().replace(" ", "_")}"),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(

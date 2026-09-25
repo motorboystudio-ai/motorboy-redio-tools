@@ -176,6 +176,7 @@ fun MotorBoyTechApp() {
                         "Paint Mixing & Tools" -> currentScreen = "paint_mixing"
                         "CDI/ECU Pinout" -> currentScreen = "pinout_library"
                         "Reference Library" -> currentScreen = "pinout_library"
+                        "Cloud SQL Database" -> currentScreen = "cloud_sql"
                         else -> {
                             currentScreen = "manual_viewer"
                         }
@@ -197,6 +198,7 @@ fun MotorBoyTechApp() {
                 "paint_guide" -> PaintGuideScreen(onBack = { currentScreen = "dashboard" })
                 "paint_mixing" -> PaintMaintenanceMixingScreen(onBack = { currentScreen = "dashboard" })
                 "pinout_library" -> LibraryScreen(onBack = { currentScreen = "dashboard" })
+                "cloud_sql" -> com.example.ui.CloudSqlScreen(onBack = { currentScreen = "dashboard" })
             }
         }
     }
