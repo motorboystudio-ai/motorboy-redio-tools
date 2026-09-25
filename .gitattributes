@@ -1,0 +1,21 @@
+# Auto detect text files and handle line endings automatically
+* text=auto
+
+# Explicitly ensure shell scripts and gradlew use LF line endings
+*.sh text eol=lf
+gradlew text eol=lf
+gradle/wrapper/gradle-wrapper.properties text eol=lf
+
+# Windows batch files must use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files must not be modified
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.keystore binary
+*.jks binary
+*.so binary

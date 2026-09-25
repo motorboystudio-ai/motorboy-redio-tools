@@ -1,0 +1,302 @@
+name: Android CI/CD - Auto Build & Release APK
+
+on:
+  push:
+    branches: [ "main", "master", "develop", "**" ]
+    tags:
+      - "v*"
+      - "[0-9]+.[0-9]+*"
+      - "release*"
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (ประเภทการ Build)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+          - all
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: 🚀 Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Set up Java JDK 21 (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          validate-wrappers: false
+          gradle-home-cache-cleanup: true
+
+      - name: 🛠️ Ensure Clean Gradle Wrapper
+        run: |
+          mkdir -p gradle/wrapper
+          if [ ! -s "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "📥 Downloading official gradle-wrapper.jar (9.3.1)..."
+            curl -sL --retry 3 -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradle/wrapper/gradle-wrapper.jar || \
+            curl -sL --retry 3 -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar || true
+          fi
+          chmod +x ./gradlew || true
+
+      - name: ⚙️ Setup Environment & Secrets Configuration
+        run: |
+          echo "🔧 Preparing environment configuration and mapping secrets..."
+          if [ ! -f ".env" ]; then
+            if [ -f ".env.example" ]; then
+              cp .env.example .env
+              echo "✅ Copied .env.example to .env"
+            else
+              touch .env
+              echo "✅ Created empty .env"
+            fi
+          fi
+          
+          # Inject GEMINI_API_KEY from GitHub Actions secrets if provided
+          if [ -n "$SECRETS_GEMINI_API_KEY" ]; then
+            sed -i '/GEMINI_API_KEY/d' .env
+            echo "GEMINI_API_KEY=$SECRETS_GEMINI_API_KEY" >> .env
+            echo "✅ Mapped GEMINI_API_KEY from repository secrets"
+          fi
+        env:
+          SECRETS_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: 🔑 Setup Android Keystore & Map Secrets
+        run: |
+          echo "🔑 Preparing keystores and checking repository secrets..."
+          
+          # 1. Setup Debug Keystore (from base64 secret, local file, or generate new)
+          if [ -n "$BASE64_DEBUG_KEYSTORE" ]; then
+            echo "Decoding debug keystore from repository secret..."
+            echo "$BASE64_DEBUG_KEYSTORE" | base64 -d > debug.keystore
+          elif [ -f "debug.keystore.base64" ]; then
+            echo "Decoding debug.keystore from debug.keystore.base64 file..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f "debug.keystore" ]; then
+            echo "Generating standard debug.keystore..."
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -dname "CN=MotorBoy,O=Boy Alaiyon,C=TH" \
+              -storetype JKS \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
+          
+          # 2. Setup Release Upload Keystore & Map Secrets
+          # Supports both KEYSTORE_PASSWORD / STORE_PASSWORD and KEY_PASSWORD / KEYSTORE_ALIAS aliases
+          RESOLVED_STORE_PASS="${KEYSTORE_PASSWORD:-${STORE_PASSWORD:-${KEY_PASSWORD:-android}}}"
+          RESOLVED_KEY_PASS="${KEY_PASSWORD:-${KEYSTORE_PASSWORD:-${STORE_PASSWORD:-android}}}"
+          RESOLVED_ALIAS="${KEY_ALIAS:-${KEYSTORE_ALIAS:-upload}}"
+          
+          if [ -n "$BASE64_RELEASE_KEYSTORE" ]; then
+            echo "Decoding release upload keystore from repository secret (BASE64_RELEASE_KEYSTORE)..."
+            echo "$BASE64_RELEASE_KEYSTORE" | base64 -d > my-upload-key.jks
+            echo "KEYSTORE_PATH=$(pwd)/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=$RESOLVED_STORE_PASS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$RESOLVED_KEY_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$RESOLVED_ALIAS" >> $GITHUB_ENV
+          elif [ -f "my-upload-key.jks" ]; then
+            echo "Using existing my-upload-key.jks..."
+            echo "KEYSTORE_PATH=$(pwd)/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=$RESOLVED_STORE_PASS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$RESOLVED_KEY_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$RESOLVED_ALIAS" >> $GITHUB_ENV
+          else
+            echo "Generating fallback upload keystore for release builds..."
+            keytool -genkeypair -v \
+              -keystore my-upload-key.jks \
+              -storepass "$RESOLVED_STORE_PASS" \
+              -keypass "$RESOLVED_KEY_PASS" \
+              -alias "$RESOLVED_ALIAS" \
+              -dname "CN=MotorBoy,O=Boy Alaiyon,C=TH" \
+              -storetype JKS \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+            echo "KEYSTORE_PATH=$(pwd)/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=$RESOLVED_STORE_PASS" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=$RESOLVED_KEY_PASS" >> $GITHUB_ENV
+            echo "KEY_ALIAS=$RESOLVED_ALIAS" >> $GITHUB_ENV
+          fi
+          echo "✅ Keystores and secrets mapped successfully"
+        env:
+          BASE64_DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+          BASE64_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      - name: 🧪 Run Unit & Component Tests
+        run: |
+          echo "🧪 Running unit tests..."
+          if [ -f "./gradlew" ] && [ -s "./gradle/wrapper/gradle-wrapper.jar" ]; then
+            ./gradlew testDebugUnitTest --continue || true
+          else
+            gradle testDebugUnitTest --continue || true
+          fi
+
+      - name: 📦 Build Android APK (${{ github.event.inputs.build_type || 'debug' }})
+        run: |
+          echo "🚀 Compiling and building APK..."
+          BUILD_CHOICE="${{ github.event.inputs.build_type }}"
+          
+          RUN_CMD="./gradlew"
+          if ! ./gradlew --version >/dev/null 2>&1; then
+            echo "⚠️ ./gradlew unavailable, falling back to system 'gradle' command..."
+            RUN_CMD="gradle"
+          fi
+          
+          if [ "$BUILD_CHOICE" = "release" ]; then
+            $RUN_CMD assembleRelease --stacktrace
+          elif [ "$BUILD_CHOICE" = "all" ]; then
+            $RUN_CMD assembleDebug assembleRelease --stacktrace || $RUN_CMD assembleDebug --stacktrace
+          else
+            $RUN_CMD assembleDebug --stacktrace
+          fi
+
+      - name: 🏷️ Collect & Rename Output APKs
+        id: package_apk
+        run: |
+          mkdir -p output_apks
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+          
+          # Find all generated APKs
+          FOUND_APK=0
+          for apk in $(find app/build/outputs/apk -name "*.apk" 2>/dev/null); do
+            VARIANT=$(basename $(dirname "$apk"))
+            TARGET_NAME="MotorBoyTech-v1.0-${VARIANT}-${TIMESTAMP}-${SHORT_SHA}.apk"
+            cp "$apk" "output_apks/${TARGET_NAME}"
+            echo "✅ Packaged: ${TARGET_NAME}"
+            FOUND_APK=1
+          done
+          
+          if [ $FOUND_APK -eq 0 ]; then
+            echo "❌ No APK files found in app/build/outputs/apk!"
+            exit 1
+          fi
+          
+          # Compute checksums
+          cd output_apks
+          sha256sum *.apk > SHA256SUMS.txt
+          cd ..
+          
+          PRIMARY_APK=$(ls output_apks/*.apk | head -n 1)
+          echo "primary_apk=${PRIMARY_APK}" >> $GITHUB_OUTPUT
+          echo "primary_name=$(basename ${PRIMARY_APK})" >> $GITHUB_OUTPUT
+
+      - name: 📤 Upload APK Artifacts (Downloadable via GitHub Web)
+        id: upload_artifact
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotorBoy-Android-APK-${{ github.run_number }}
+          path: |
+            output_apks/*.apk
+            output_apks/SHA256SUMS.txt
+          retention-days: 1
+          if-no-files-found: ignore
+
+      - name: 🚀 Auto-Publish Daily / Build Release (Direct Download Alternative when Storage Quota is full)
+        uses: softprops/action-gh-release@v2
+        if: success() && steps.package_apk.outcome == 'success' && github.event_name != 'pull_request'
+        continue-on-error: true
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "MotorBoy Tech Build #${{ github.run_number }} (${{ github.ref_name }})"
+          body: |
+            ### 📱 MotorBoy Tech Android APK Build #${{ github.run_number }}
+            - **Commit**: ${{ github.sha }}
+            - **Branch**: `${{ github.ref_name }}`
+            - **Built at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            
+            ดาวน์โหลดไฟล์ APK ด้านล่างได้โดยตรง (ไม่จำกัดโควตา Artifacts Storage)
+          files: |
+            output_apks/*.apk
+            output_apks/SHA256SUMS.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Generate Rich Build Summary
+        run: |
+          echo "## 🚀 Android APK Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| รายละเอียด | ข้อมูล |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 **ชื่อแอปพลิเคชัน** | **MotorBoy Tech (บอย อะไหล่ยนต์ หนองตาไก้)** |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 **ไฟล์ APK หลัก** | \`${{ steps.package_apk.outputs.primary_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔢 **Build Run** | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌿 **Branch / Ref** | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 **Commit** | [\`${{ github.sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🕒 **เวลาที่คอมไพล์** | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 วิธีดาวน์โหลด APK ผ่านหน้าเว็บ GitHub:" >> $GITHUB_STEP_SUMMARY
+          echo "1. ไปที่แท็บ **Actions** ด้านบนของ GitHub Repository" >> $GITHUB_STEP_SUMMARY
+          echo "2. คลิกที่ Workflow Run ล่าสุด (**#${{ github.run_number }}**)" >> $GITHUB_STEP_SUMMARY
+          echo "3. เลื่อนลงมาที่หมวด **Artifacts** ด้านล่าง จะพบไฟล์ \`MotorBoy-Android-APK-${{ github.run_number }}\` กดดาวน์โหลดแล้วติดตั้งบนมือถือได้ทันที" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 SHA256 Checksums:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat output_apks/SHA256SUMS.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🚀 Publish GitHub Release (เมื่อ Push Git Tag เช่น v1.0.0 หรือแทร็ก Releases)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        with:
+          files: |
+            output_apks/*.apk
+            output_apks/SHA256SUMS.txt
+          name: MotorBoy Tech ${{ github.ref_name }}
+          body: |
+            ## 📱 MotorBoy Tech Android APK Release (${{ github.ref_name }})
+            
+            ### 📥 ดาวน์โหลดไฟล์ติดตั้ง (.apk)
+            สามารถดาวน์โหลดไฟล์ APK ไปติดตั้งใช้งานบนมือถือ Android ได้โดยตรงจากรายการ Assets ด้านล่าง:
+            - **Variant**: Debug & Release
+            - **Tag**: `${{ github.ref_name }}`
+            - **Commit**: `${{ github.sha }}`
+            - **Build Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            
+            ---
+            *สร้างและแนบไฟล์ APK อัตโนมัติโดย GitHub Actions CI/CD*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

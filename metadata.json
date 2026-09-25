@@ -1,0 +1,8 @@
+{
+  "name": "MotorBoy Tech",
+  "description": "ระบบฐานข้อมูลและคู่มือซ่อมรถจักรยานยนต์ออฟไลน์ บอย อะไหล่ยนต์ หนองตาไก้",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
