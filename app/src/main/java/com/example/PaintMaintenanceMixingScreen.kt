@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,7 +80,7 @@ data class PaintToolGlossaryItem(
 fun PaintMaintenanceMixingScreen(
     onBack: () -> Unit = {}
 ) {
-    var selectedSection by remember { mutableStateOf(0) }
+    var selectedSection by rememberSaveable { mutableStateOf(0) }
     val sectionTabs = listOf(
         "🎨 เทคนิคเทียบสี",
         "🛠️ ขั้นตอนซ่อมผิวโปร",
@@ -109,7 +110,10 @@ fun PaintMaintenanceMixingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.testTag("pmm_back_btn")
+                        ) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "ย้อนกลับ")
                         }
                         Spacer(modifier = Modifier.width(4.dp))
@@ -128,7 +132,7 @@ fun PaintMaintenanceMixingScreen(
                             }
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 if (AppSettings.isThai) "🎨 คู่มือทำสี & ผสมสี 2K"
                                 else "🎨 Paint Maintenance & Mixing",
@@ -141,6 +145,24 @@ fun PaintMaintenanceMixingScreen(
                                 else "Color matching, repair & calculator",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                        }
+                        FilledTonalButton(
+                            onClick = { AppSettings.isThai = !AppSettings.isThai },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                            modifier = Modifier
+                                .height(36.dp)
+                                .testTag("pmm_lang_toggle_btn")
+                        ) {
+                            Icon(
+                                Icons.Default.Translate,
+                                contentDescription = "สลับภาษา",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (AppSettings.isThai) "TH" else "EN",
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -191,7 +213,7 @@ fun PaintMaintenanceMixingScreen(
 
 @Composable
 fun ColorMatchingTechniquesSection() {
-    var selectedSubCategory by remember { mutableStateOf(0) }
+    var selectedSubCategory by rememberSaveable { mutableStateOf(0) }
     val subTabs = listOf("กระบวนการเทียบสี 5 ขั้นตอน", "ตารางปรับจูนแม่สี (Tinting Rules)", "การตรวจแสง & เมทาเมอริซึม")
 
     val matchingSteps = listOf(
@@ -828,8 +850,8 @@ fun ChemicalSafetyPrecautionsSection() {
 
 @Composable
 fun PaintToolsGlossarySection() {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryFilter by remember { mutableStateOf("ทั้งหมด") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedCategoryFilter by rememberSaveable { mutableStateOf("ทั้งหมด") }
 
     val categories = listOf("ทั้งหมด", "ปืนพ่นสี", "ระบบลมและกรอง", "เครื่องมือขัดผิว", "อุปกรณ์ผสมและวัด", "อุปกรณ์ตรวจสอบ")
 

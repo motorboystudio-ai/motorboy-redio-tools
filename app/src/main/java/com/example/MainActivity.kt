@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.RadioManager
+import com.example.data.ServiceReminderWorker
 import com.example.data.TvManager
 import com.example.data.repository.DtcRepositoryImpl
 import com.example.ui.CameraScannerScreen
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         RadioManager.initContext(this)
         TvManager.initContext(this)
+        ServiceReminderWorker.schedule(this)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme(darkTheme = true) {
@@ -154,7 +156,9 @@ fun MotorBoyTechApp() {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen != "radio_scanner" && currentScreen != "online_tv") {
+            // Fullscreen-ish pages (radio / tv / movie) hide the radio mini player
+            // so it never covers video content or the bottom of the page.
+            if (currentScreen != "radio_scanner" && currentScreen != "online_tv" && currentScreen != "movie_online") {
                 MiniPlayerBar(
                     onOpenScanner = { currentScreen = "radio_scanner" }
                 )
@@ -198,7 +202,10 @@ fun MotorBoyTechApp() {
                     val context = LocalContext.current
                     CameraScannerScreen(onBack = { currentScreen = "dashboard" }, dtcRepository = DtcRepositoryImpl(context))
                 }
-                "paint_guide" -> PaintGuideScreen(onBack = { currentScreen = "dashboard" })
+                "paint_guide" -> PaintGuideScreen(
+                    onBack = { currentScreen = "dashboard" },
+                    onOpenMixing = { currentScreen = "paint_mixing" }
+                )
                 "paint_mixing" -> PaintMaintenanceMixingScreen(onBack = { currentScreen = "dashboard" })
                 "pinout_library" -> LibraryScreen(onBack = { currentScreen = "dashboard" })
                 "cloud_sql" -> com.example.ui.CloudSqlScreen(onBack = { currentScreen = "dashboard" })

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,9 +67,10 @@ data class PaintDefect(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaintGuideScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onOpenMixing: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf(
         "🎨 ขั้นตอนทำสี",
         "🩹 ซ่อมสี & เบลนด์",
@@ -82,8 +84,31 @@ fun PaintGuideScreen(
             TopAppBar(
                 title = { Text("คู่มือทำสี & ซ่อมสีมอเตอร์ไซค์ 2K") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.testTag("paint_guide_back_btn")
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "ย้อนกลับ")
+                    }
+                },
+                actions = {
+                    FilledTonalButton(
+                        onClick = { AppSettings.isThai = !AppSettings.isThai },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .height(36.dp)
+                            .testTag("paint_guide_lang_toggle_btn")
+                    ) {
+                        Icon(
+                            Icons.Default.Translate,
+                            contentDescription = "สลับภาษา",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            if (AppSettings.isThai) "TH" else "EN",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             )
@@ -178,7 +203,10 @@ fun PaintGuideScreen(
                 when (tabIndex) {
                     0 -> PaintingProcessTab()
                     1 -> SpotRepairTab()
-                    2 -> PaintMixingCalculatorTab()
+                    2 -> PaintMixingCalculatorTab(
+                        showFullVersionLink = true,
+                        onOpenFullCalculator = onOpenMixing
+                    )
                     3 -> SpecialTechniquesTab()
                     4 -> PaintDefectsTab()
                 }
@@ -193,7 +221,7 @@ fun PaintGuideScreen(
 
 @Composable
 fun PaintingProcessTab() {
-    var selectedMaterial by remember { mutableStateOf("ABS / พลาสติกใหม่") }
+    var selectedMaterial by rememberSaveable { mutableStateOf("ABS / พลาสติกใหม่") }
     val materials = listOf("ABS / พลาสติกใหม่", "PP / พลาสติกดำเหนียว", "โลหะ / ถังน้ำมัน / โครงเหล็ก")
 
     val steps = when (selectedMaterial) {
@@ -617,11 +645,14 @@ fun SpotRepairTab() {
 // =========================================================================
 
 @Composable
-fun PaintMixingCalculatorTab() {
-    var inputMode by remember { mutableStateOf("Volume") } // "Volume" or "Area"
-    var inputValue by remember { mutableStateOf("150") }
-    var selectedFormulaType by remember { mutableStateOf("แลกเกอร์ 2K (ระบบ 2:1)") }
-    var thinnerPercentage by remember { mutableStateOf(10f) } // %
+fun PaintMixingCalculatorTab(
+    showFullVersionLink: Boolean = false,
+    onOpenFullCalculator: () -> Unit = {}
+) {
+    var inputMode by rememberSaveable { mutableStateOf("Volume") } // "Volume" or "Area"
+    var inputValue by rememberSaveable { mutableStateOf("150") }
+    var selectedFormulaType by rememberSaveable { mutableStateOf("แลกเกอร์ 2K (ระบบ 2:1)") }
+    var thinnerPercentage by rememberSaveable { mutableFloatStateOf(10f) } // %
 
     val totalVolume = if (inputMode == "Volume") {
         inputValue.toFloatOrNull() ?: 150f
@@ -663,6 +694,47 @@ fun PaintMixingCalculatorTab() {
     ) {
         item {
             Text("🧪 เครื่องคำนวณอัตราส่วนผสมสี (2K Calculator)", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+        }
+
+        // Link to the full Mixing & Tools screen (avoids maintaining two separate calculators).
+        if (showFullVersionLink) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenFullCalculator() }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.OpenInNew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "ต้องการสูตรเทียบสี–ซ่อมผิว–คลังเครื่องมือแบบเต็ม?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                "แตะเพื่อเปิดหน้า Paint Mixing & Tools",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         item {
