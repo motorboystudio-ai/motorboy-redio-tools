@@ -48,6 +48,8 @@ fun CameraScannerScreen(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     var detectedDtc by remember { mutableStateOf<DtcCode?>(null) }
     var scanError by remember { mutableStateOf<String?>(null) }
+    var lastOcrText by remember { mutableStateOf("") }
+    var notFoundCode by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -165,18 +167,33 @@ fun CameraScannerScreen(
                                             )
                                             recognizer.process(image)
                                                 .addOnSuccessListener { visionText ->
+                                                    val seen = visionText.text.trim().take(120)
                                                     val match = dtcRegex.find(visionText.text)
                                                     if (match != null) {
                                                         val code = match.value
                                                         scope.launch {
                                                             try {
-                                                                detectedDtc =
+                                                                val result =
                                                                     dtcRepository.getDtcDescription(code)
+                                                                if (result != null) {
+                                                                    detectedDtc = result
+                                                                    notFoundCode = null
+                                                                } else {
+                                                                    detectedDtc = null
+                                                                    notFoundCode = code
+                                                                }
+                                                                lastOcrText = seen
                                                                 scanError = null
                                                             } catch (e: Exception) {
                                                                 scanError =
                                                                     "ค้นหารหัส $code ไม่สำเร็จ: ${e.message}"
                                                             }
+                                                        }
+                                                    } else {
+                                                        scope.launch {
+                                                            lastOcrText = seen
+                                                            // Keep previous result; only clear stale "not found"
+                                                            if (seen.isEmpty()) notFoundCode = null
                                                         }
                                                     }
                                                 }
@@ -249,6 +266,49 @@ fun CameraScannerScreen(
                         }) {
                             Text("ไปที่ตั้งค่า")
                         }
+                    }
+                }
+            }
+
+            // Live OCR status: proves the camera/OCR pipeline works even before a code matches.
+            Card(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (notFoundCode != null)
+                        MaterialTheme.colorScheme.tertiaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
+                    Text(
+                        if (lastOcrText.isNotEmpty()) "👁 กล้องเห็นข้อความ:" else "👁 กำลังมองหาตัวอักษร — ขยับป้ายให้อยู่ในกรอบไฟเขียว",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (notFoundCode != null)
+                            MaterialTheme.colorScheme.onTertiaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (lastOcrText.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            lastOcrText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (notFoundCode != null)
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (notFoundCode != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "พบรหัส $notFoundCode แต่ยังไม่มีในฐานข้อมูลในเครื่อง",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
                     }
                 }
             }
