@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,13 +41,13 @@ val enginePresets = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CompressionCalculatorTab() {
-    var selectedPresetIndex by remember { mutableIntStateOf(0) }
-    var boreText by remember { mutableStateOf(enginePresets[0].bore.toString()) }
-    var strokeText by remember { mutableStateOf(enginePresets[0].stroke.toString()) }
-    var chamberText by remember { mutableStateOf(enginePresets[0].chamberCc.toString()) }
-    var deckClearanceText by remember { mutableStateOf("0.5") }
-    var gasketThicknessText by remember { mutableStateOf("0.25") }
-    var cylindersCount by remember { mutableIntStateOf(1) }
+    var selectedPresetIndex by rememberSaveable { mutableIntStateOf(0) }
+    var boreText by rememberSaveable { mutableStateOf(enginePresets[0].bore.toString()) }
+    var strokeText by rememberSaveable { mutableStateOf(enginePresets[0].stroke.toString()) }
+    var chamberText by rememberSaveable { mutableStateOf(enginePresets[0].chamberCc.toString()) }
+    var deckClearanceText by rememberSaveable { mutableStateOf("0.5") }
+    var gasketThicknessText by rememberSaveable { mutableStateOf("0.25") }
+    var cylindersCount by rememberSaveable { mutableIntStateOf(1) }
 
     val bore = boreText.toFloatOrNull() ?: 50f
     val stroke = strokeText.toFloatOrNull() ?: 55.6f

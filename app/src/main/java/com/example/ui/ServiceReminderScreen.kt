@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,8 +48,8 @@ fun ServiceReminderScreen(
     val reminderPrefs = remember { ServiceReminderPreferences.getInstance(context) }
     val reminder by reminderPrefs.reminderFlow.collectAsState()
 
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showQuickMileageDialog by remember { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    var showQuickMileageDialog by rememberSaveable { mutableStateOf(false) }
 
     // Notification Permission Launcher (Android 13+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -305,13 +306,13 @@ fun ServiceReminderScreen(
 
     // Edit/Record Oil Change Dialog
     if (showEditDialog) {
-        var inputBikeModel by remember { mutableStateOf(reminder.bikeModel) }
-        var inputLastMileage by remember { mutableStateOf(reminder.lastOilChangeMileage.toString()) }
-        var inputCurrentMileage by remember { mutableStateOf(reminder.currentMileage.toString()) }
-        var inputInterval by remember { mutableStateOf(reminder.intervalKm.toString()) }
-        var inputOilGrade by remember { mutableStateOf(reminder.oilBrandGrade) }
-        var inputDate by remember { mutableStateOf(reminder.lastChangeDate) }
-        var inputNotes by remember { mutableStateOf(reminder.notes) }
+        var inputBikeModel by rememberSaveable { mutableStateOf(reminder.bikeModel) }
+        var inputLastMileage by rememberSaveable { mutableStateOf(reminder.lastOilChangeMileage.toString()) }
+        var inputCurrentMileage by rememberSaveable { mutableStateOf(reminder.currentMileage.toString()) }
+        var inputInterval by rememberSaveable { mutableStateOf(reminder.intervalKm.toString()) }
+        var inputOilGrade by rememberSaveable { mutableStateOf(reminder.oilBrandGrade) }
+        var inputDate by rememberSaveable { mutableStateOf(reminder.lastChangeDate) }
+        var inputNotes by rememberSaveable { mutableStateOf(reminder.notes) }
 
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
@@ -404,7 +405,7 @@ fun ServiceReminderScreen(
 
     // Quick Mileage Update Dialog
     if (showQuickMileageDialog) {
-        var inputMileage by remember { mutableStateOf(reminder.currentMileage.toString()) }
+        var inputMileage by rememberSaveable { mutableStateOf(reminder.currentMileage.toString()) }
 
         AlertDialog(
             onDismissRequest = { showQuickMileageDialog = false },

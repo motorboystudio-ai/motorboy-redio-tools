@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,11 +67,11 @@ val sparkPlugConditions = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FuelAirTuningTab() {
-    var mainJetText by remember { mutableStateOf("115") }
-    var tempText by remember { mutableStateOf("32") }
-    var altitudeText by remember { mutableStateOf("20") }
-    var targetAfrIndex by remember { mutableIntStateOf(0) }
-    var selectedPlugIndex by remember { mutableIntStateOf(1) }
+    var mainJetText by rememberSaveable { mutableStateOf("115") }
+    var tempText by rememberSaveable { mutableStateOf("32") }
+    var altitudeText by rememberSaveable { mutableStateOf("20") }
+    var targetAfrIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedPlugIndex by rememberSaveable { mutableIntStateOf(1) }
 
     val mainJet = mainJetText.toFloatOrNull() ?: 115f
     val tempC = tempText.toFloatOrNull() ?: 32f

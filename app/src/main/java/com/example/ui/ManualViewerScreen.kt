@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,11 +38,29 @@ fun ManualViewerScreen(
     onBack: () -> Unit = {}
 ) {
     val manuals = ManualRepository.sampleManuals
-    var selectedManual by remember { mutableStateOf(initialManual ?: manuals.first()) }
-    var currentStepIndex by remember { mutableIntStateOf(0) }
-    var completedStepIndices by remember { mutableStateOf(setOf<Int>()) }
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Step-by-Step, 1: Zoomable Schematic, 2: All Steps
-    var showManualPicker by remember { mutableStateOf(false) }
+    // Rotation-safe: persist only the manual id (String), derive the object.
+    // Completed steps persist as List<Int> (Bundle-safe), exposed as a Set.
+    var selectedManualId by rememberSaveable { mutableStateOf(initialManual?.id ?: manuals.first().id) }
+    val selectedManual = manuals.find { it.id == selectedManualId } ?: manuals.first()
+    var currentStepIndex by rememberSaveable { mutableIntStateOf(0) }
+    var completedStepList by rememberSaveable { mutableStateOf(emptyList<Int>()) }
+    val completedStepIndices: Set<Int> = completedStepList.toSet()
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0: Step-by-Step, 1: Zoomable Schematic, 2: All Steps
+    var showManualPicker by rememberSaveable { mutableStateOf(false) }
+
+    fun toggleCompleted(index: Int) {
+        completedStepList = if (completedStepList.contains(index)) {
+            completedStepList - index
+        } else {
+            completedStepList + index
+        }
+    }
+
+    fun selectManual(manualId: String) {
+        selectedManualId = manualId
+        currentStepIndex = 0
+        completedStepList = emptyList()
+    }
 
     val steps = selectedManual.steps
     val safeStepIndex = currentStepIndex.coerceIn(0, (steps.size - 1).coerceAtLeast(0))
@@ -201,20 +220,14 @@ fun ManualViewerScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Tab Content
-            Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (selectedTab) {
                     0 -> StepByStepView(
                         manual = selectedManual,
                         currentStepIndex = safeStepIndex,
                         completedIndices = completedStepIndices,
                         onStepSelect = { currentStepIndex = it },
-                        onToggleCompleted = { index ->
-                            completedStepIndices = if (completedStepIndices.contains(index)) {
-                                completedStepIndices - index
-                            } else {
-                                completedStepIndices + index
-                            }
-                        },
+                        onToggleCompleted = { toggleCompleted(it) },
                         onNextStep = {
                             if (safeStepIndex < steps.size - 1) {
                                 currentStepIndex = safeStepIndex + 1
@@ -234,13 +247,7 @@ fun ManualViewerScreen(
                             currentStepIndex = index
                             selectedTab = 0
                         },
-                        onToggleCompleted = { index ->
-                            completedStepIndices = if (completedStepIndices.contains(index)) {
-                                completedStepIndices - index
-                            } else {
-                                completedStepIndices + index
-                            }
-                        }
+                        onToggleCompleted = { toggleCompleted(it) }
                     )
                 }
             }
@@ -275,9 +282,7 @@ fun ManualViewerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    selectedManual = manual
-                                    currentStepIndex = 0
-                                    completedStepIndices = emptySet()
+                                    selectManual(manual.id)
                                     showManualPicker = false
                                 },
                             shape = RoundedCornerShape(12.dp),

@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,13 +40,13 @@ val chainPresets = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChainCalculatorTab() {
-    var selectedPresetIndex by remember { mutableIntStateOf(0) }
-    var minSlackText by remember { mutableStateOf(chainPresets[0].minSlack.toString()) }
-    var maxSlackText by remember { mutableStateOf(chainPresets[0].maxSlack.toString()) }
-    var measuredSlackText by remember { mutableStateOf("30.0") }
-    var frontSprocketText by remember { mutableStateOf("14") }
-    var rearSprocketText by remember { mutableStateOf("36") }
-    var adjusterPitchText by remember { mutableStateOf("1.25") }
+    var selectedPresetIndex by rememberSaveable { mutableIntStateOf(0) }
+    var minSlackText by rememberSaveable { mutableStateOf(chainPresets[0].minSlack.toString()) }
+    var maxSlackText by rememberSaveable { mutableStateOf(chainPresets[0].maxSlack.toString()) }
+    var measuredSlackText by rememberSaveable { mutableStateOf("30.0") }
+    var frontSprocketText by rememberSaveable { mutableStateOf("14") }
+    var rearSprocketText by rememberSaveable { mutableStateOf("36") }
+    var adjusterPitchText by rememberSaveable { mutableStateOf("1.25") }
 
     val minSlack = minSlackText.toFloatOrNull() ?: 25f
     val maxSlack = maxSlackText.toFloatOrNull() ?: 35f

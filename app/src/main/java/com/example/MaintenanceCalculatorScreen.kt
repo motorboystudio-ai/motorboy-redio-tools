@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -25,7 +26,7 @@ data class CalcTabItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MaintenanceCalculatorScreen(onBack: () -> Unit) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val tabs = listOf(
         CalcTabItem("ความตึงโซ่ & สเตอร์", Icons.Default.LinearScale, "tab_chain"),

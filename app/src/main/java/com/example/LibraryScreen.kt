@@ -1,7 +1,9 @@
 package com.example
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,8 +58,9 @@ fun LibraryScreen(
     onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var selectedCategory by remember { mutableStateOf("ทั้งหมด") }
-    var viewingDiagram by remember { mutableStateOf<TechnicalDiagramItem?>(null) }
+    var selectedCategory by rememberSaveable { mutableStateOf("ทั้งหมด") }
+    // Rotation-safe: persist only the diagram id, derive the item.
+    var viewingDiagramId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val allDiagrams = listOf(
         // MotorIndy Special Highlights
@@ -188,10 +192,7 @@ fun LibraryScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://facebook.com/motorindy"))
-                            context.startActivity(intent)
-                        },
+                        onClick = { openMotorindyPage(context) },
                         modifier = Modifier.testTag("btn_visit_motorindy_fb")
                     ) {
                         Icon(
@@ -217,10 +218,7 @@ fun LibraryScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://facebook.com/motorindy"))
-                        context.startActivity(intent)
-                    }
+                    .clickable { openMotorindyPage(context) }
                     .testTag("motorindy_credit_card"),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -300,7 +298,7 @@ fun LibraryScreen(
                 items(filteredDiagrams) { item ->
                     DiagramCard(
                         diagram = item,
-                        onClick = { viewingDiagram = item }
+                        onClick = { viewingDiagramId = item.id }
                     )
                 }
             }
@@ -308,10 +306,11 @@ fun LibraryScreen(
     }
 
     // High-Resolution Zoomable Dialog
+    val viewingDiagram = allDiagrams.find { it.id == viewingDiagramId }
     if (viewingDiagram != null) {
-        val currentDiagram = viewingDiagram!!
+        val currentDiagram = viewingDiagram
         Dialog(
-            onDismissRequest = { viewingDiagram = null },
+            onDismissRequest = { viewingDiagramId = null },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Surface(
@@ -337,15 +336,12 @@ fun LibraryScreen(
                                 }
                             },
                             navigationIcon = {
-                                IconButton(onClick = { viewingDiagram = null }) {
+                                IconButton(onClick = { viewingDiagramId = null }) {
                                     Icon(Icons.Default.Close, contentDescription = "Close")
                                 }
                             },
                             actions = {
-                                IconButton(onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://facebook.com/motorindy"))
-                                    context.startActivity(intent)
-                                }) {
+                                IconButton(onClick = { openMotorindyPage(context) }) {
                                     Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Visit Page")
                                 }
                             }
@@ -431,6 +427,18 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+}
+
+private fun openMotorindyPage(context: android.content.Context) {
+    try {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse("https://facebook.com/motorindy"))
+        )
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "ไม่พบเบราว์เซอร์สำหรับเปิดลิงก์ MotorIndy", Toast.LENGTH_SHORT).show()
+    } catch (_: Exception) {
+        Toast.makeText(context, "เปิดลิงก์ไม่สำเร็จ", Toast.LENGTH_SHORT).show()
     }
 }
 

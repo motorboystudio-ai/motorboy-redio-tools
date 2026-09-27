@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -37,9 +38,9 @@ val standardTorqueList = listOf(
 
 @Composable
 fun UnitConverterTab() {
-    var psiText by remember { mutableStateOf("29.0") }
-    var nmText by remember { mutableStateOf("30.0") }
-    var ccText by remember { mutableStateOf("800.0") }
+    var psiText by rememberSaveable { mutableStateOf("29.0") }
+    var nmText by rememberSaveable { mutableStateOf("30.0") }
+    var ccText by rememberSaveable { mutableStateOf("800.0") }
 
     val psi = psiText.toFloatOrNull() ?: 29f
     val bar = MotorcycleCalculators.psiToBar(psi)
