@@ -51,6 +51,7 @@ fun DashboardScreen(
     val isBookmarked = RadioManager.isBookmarked(currentStation.id)
 
     val features = listOf(
+        FeatureItem("Product Price List", "รายการสินค้า & ราคาช่าง น้ำมัน อะไหล่ ค่าแรง", Icons.Default.Inventory),
         FeatureItem("Movie Online", "ดูหนังออนไลน์ ซีรีส์ HD จาก Movie911HD", Icons.Default.Movie),
         FeatureItem("Motorcycle Manuals", "คู่มือซ่อมบำรุงตามระยะ ซูมไดอะแกรม & ทีละสเต็ป", Icons.AutoMirrored.Filled.MenuBook),
         FeatureItem("Maintenance Calculator", "ความตึงโซ่ กำลังอัด จูนอากาศ-น้ำมัน & แปลงหน่วย", Icons.Default.Calculate),

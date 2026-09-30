@@ -184,6 +184,7 @@ fun MotorBoyTechApp() {
                         "Reference Library" -> currentScreen = "pinout_library"
                         "Cloud SQL Database" -> currentScreen = "cloud_sql"
                         "Movie Online" -> currentScreen = "movie_online"
+                        "Product Price List" -> currentScreen = "product_prices"
                         else -> {
                             currentScreen = "manual_viewer"
                         }
@@ -210,6 +211,10 @@ fun MotorBoyTechApp() {
                 "pinout_library" -> LibraryScreen(onBack = { currentScreen = "dashboard" })
                 "cloud_sql" -> com.example.ui.CloudSqlScreen(onBack = { currentScreen = "dashboard" })
                 "movie_online" -> com.example.ui.MovieOnlineScreen(onBack = { currentScreen = "dashboard" })
+                "product_prices" -> com.example.ui.ProductPriceScreen(
+                    onBack = { currentScreen = "dashboard" },
+                    onOpenAiChat = { currentScreen = "gemini_chat" }
+                )
             }
         }
     }

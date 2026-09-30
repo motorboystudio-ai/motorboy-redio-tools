@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.RadioManager
+import com.example.data.gemini.AiProvider
 import com.example.data.gemini.AppActionCommand
 import com.example.data.gemini.ChatMessage
 import com.example.data.gemini.GeminiMechanicService
@@ -46,24 +47,36 @@ fun MechanicChatScreen(
 
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var selectedProvider by remember { mutableStateOf(AiProvider.POOLSIDE) }
 
     val messages = remember {
         mutableStateListOf(
             ChatMessage(
-                sender = "gemini",
-                text = "สวัสดีครับช่าง! ผมคือ **ช่างบอย Gemini AI สายช่าง** 🔧\n\nพร้อมช่วยวิเคราะห์ปัญหาซ่อมรถ สเปกเครื่องยนต์ เทคนิคผ่าเครื่อง โค้ดไฟกระพริบ และสั่งเปิด-ปิดรันหน้าต่างฟังก์ชันในแอปให้ทันทีครับ!\n\nลองพิมพ์ถาม หรือแตะปุ่มคำสั่งลัดด้านล่างได้เลยครับ 👇"
+                sender = "poolside",
+                text = "สวัสดีครับช่าง! ผมคือ **ช่างบอย AI สายช่าง** 🔧 (ขับเคลื่อนด้วย **Poolside Laguna 2.1** & Gemini)\n\n" +
+                        "ผมทราบฐานข้อมูลราคาสินค้า อะไหล่ และค่าแรงในอู่ทั้งหมดแล้วครับ!\n\n" +
+                        "คุณสามารถ:\n" +
+                        "• **ถามราคาได้โดยตรง:** เช่น 'ปะยางกี่บาท', 'เปลี่ยนลูกปืนแผงคอกี่บาท', 'ลูกปืน 6201 ราคาเท่าไหร่'\n" +
+                        "• **สั่งแก้ราคาได้ทันที:** เช่น 'แก้ราคาปะยาง เป็น 60 บาท'\n" +
+                        "• **สั่งเพิ่ม/ลบสินค้า:** เช่น 'เพิ่มสินค้า ...', 'ลบสินค้า ...'\n" +
+                        "• หรือสั่งรันหน้าต่างต่างๆ ในแอปได้เลยครับ 👇",
+                providerUsed = AiProvider.POOLSIDE
             )
         )
     }
 
     val quickCommands = listOf(
+        "ปะยาง กี่บาท 🛵",
+        "เปลี่ยนลูกปืนแผงคอ กี่บาท ⚙️",
+        "ตารางราคาสินค้า 📋",
+        "ลูกปืน 6201 ราคา 🔩",
         "เปิดวิทยุช่าง 📻",
         "ดูไดอะแกรม MotorIndy ⚡",
         "เช็คน้ำมันเครื่อง 🛢️",
         "คำนวณกำลังอัด 🧮",
         "สแกนกล้อง DTC 📷",
         "คู่มือผ่าเครื่อง 📖",
-        "สูตรผสมสี 2K 🎨",
+        "ดูหนังออนไลน์ 🎬",
         "ปิดวิทยุ 🔇"
     )
 
@@ -86,6 +99,15 @@ fun MechanicChatScreen(
                     Toast.makeText(context, "ปิดวิทยุแล้ว 🔇", Toast.LENGTH_SHORT).show()
                 }
             }
+            is AppActionCommand.PriceUpdated -> {
+                Toast.makeText(context, "✅ ${action.message}", Toast.LENGTH_LONG).show()
+            }
+            is AppActionCommand.PriceAdded -> {
+                Toast.makeText(context, "✅ ${action.message}", Toast.LENGTH_LONG).show()
+            }
+            is AppActionCommand.PriceDeleted -> {
+                Toast.makeText(context, "🗑️ ${action.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -101,15 +123,18 @@ fun MechanicChatScreen(
 
             val (replyText, actionCommand) = GeminiMechanicService.askMechanic(
                 userPrompt = userMsg.text,
-                history = messages
+                history = messages,
+                provider = selectedProvider,
+                context = context
             )
 
-            val geminiMsg = ChatMessage(
-                sender = "gemini",
+            val aiMsg = ChatMessage(
+                sender = if (selectedProvider == AiProvider.POOLSIDE) "poolside" else "gemini",
                 text = replyText,
-                actionCommand = actionCommand
+                actionCommand = actionCommand,
+                providerUsed = selectedProvider
             )
-            messages.add(geminiMsg)
+            messages.add(aiMsg)
             isLoading = false
             listState.animateScrollToItem(messages.size - 1)
 
@@ -135,7 +160,7 @@ fun MechanicChatScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Default.SmartToy,
+                                    if (selectedProvider == AiProvider.POOLSIDE) Icons.Default.Bolt else Icons.Default.SmartToy,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(22.dp)
@@ -146,26 +171,26 @@ fun MechanicChatScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(
-                                    text = "ช่างบอย AI (Gemini สายช่าง)",
+                                    text = "ช่างบอย AI",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer
+                                    color = if (selectedProvider == AiProvider.POOLSIDE) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
                                 ) {
                                     Text(
-                                        "สั่งการแอปได้",
+                                        if (selectedProvider == AiProvider.POOLSIDE) "Poolside Laguna" else "Gemini 3.6",
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        color = if (selectedProvider == AiProvider.POOLSIDE) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
                             Text(
-                                text = "ผู้ช่วยช่างอัจฉริยะ ตอบคำถาม & สั่งเปิดปิดฟังก์ชัน",
+                                text = "ถามราคา อะไหล่ สั่งแก้ราคา & สั่งเปิดปิดฟังก์ชัน",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -179,12 +204,19 @@ fun MechanicChatScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = { onNavigateTo(ScreenDestination.PRODUCT_PRICES.route) },
+                        modifier = Modifier.testTag("btn_go_prices")
+                    ) {
+                        Icon(Icons.Default.Inventory, contentDescription = "รายการสินค้า")
+                    }
+                    IconButton(
                         onClick = {
                             messages.clear()
                             messages.add(
                                 ChatMessage(
-                                    sender = "gemini",
-                                    text = "ล้างประวัติการสนทนาเรียบร้อยครับ! มีเรื่องซ่อมรถ หรือต้องการสั่งเปิดฟังก์ชันไหน แจ้งช่างบอย AI ได้เลยครับ 🔧"
+                                    sender = if (selectedProvider == AiProvider.POOLSIDE) "poolside" else "gemini",
+                                    text = "ล้างประวัติการสนทนาเรียบร้อยครับ! มีเรื่องราคาอะไหล่ ซ่อมรถ หรือต้องการสั่งเปิดฟังก์ชันไหน แจ้งช่างบอย AI ได้เลยครับ 🔧",
+                                    providerUsed = selectedProvider
                                 )
                             )
                         },
@@ -202,6 +234,39 @@ fun MechanicChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Model Selector Bar
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "โมเดล AI:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    FilterChip(
+                        selected = selectedProvider == AiProvider.POOLSIDE,
+                        onClick = { selectedProvider = AiProvider.POOLSIDE },
+                        label = { Text("⚡ Poolside Laguna 2.1", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                        modifier = Modifier.height(32.dp)
+                    )
+                    FilterChip(
+                        selected = selectedProvider == AiProvider.GEMINI,
+                        onClick = { selectedProvider = AiProvider.GEMINI },
+                        label = { Text("✨ Gemini 3.6 Flash", fontSize = 11.sp) },
+                        modifier = Modifier.height(32.dp)
+                    )
+                }
+            }
+
             // Chat Messages List
             LazyColumn(
                 state = listState,
@@ -229,7 +294,10 @@ fun MechanicChatScreen(
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Text(
-                                "ช่างบอย AI กำลังวิเคราะห์และตรวจสอบคำสั่ง...",
+                                if (selectedProvider == AiProvider.POOLSIDE)
+                                    "Poolside Laguna กำลังค้นหาราคาและวิเคราะห์คำสั่ง..."
+                                else
+                                    "Gemini กำลังค้นหาราคาและวิเคราะห์คำสั่ง...",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -247,7 +315,7 @@ fun MechanicChatScreen(
             ) {
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     Text(
-                        text = "⚡ คำสั่งลัดด่วน (แตะเพื่อถามหรือสั่งรันหน้าต่าง):",
+                        text = "⚡ คำสั่งลัดด่วน (แตะเพื่อถามราคาหรือสั่งรันหน้าต่าง):",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -258,19 +326,25 @@ fun MechanicChatScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(quickCommands) { cmd ->
-                            SuggestionChip(
-                                onClick = { sendMessage(cmd) },
-                                label = { Text(cmd, fontSize = 12.sp) },
-                                colors = SuggestionChipDefaults.suggestionChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.clickable { sendMessage(cmd) }
+                            ) {
+                                Text(
+                                    text = cmd,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
-                            )
+                            }
                         }
                     }
                 }
             }
 
-            // Input Bar
+            // Chat Input Bar
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 3.dp,
@@ -286,12 +360,17 @@ fun MechanicChatScreen(
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        placeholder = { Text("ถามเรื่องซ่อม หรือสั่ง 'เปิดวิทยุ', 'เปิดคู่มือ'...") },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("input_chat_prompt"),
+                        placeholder = {
+                            Text(
+                                "ถามราคา เช่น 'ปะยางกี่บาท' หรือสั่งแก้ราคา...",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
                         shape = RoundedCornerShape(24.dp),
-                        maxLines = 3,
+                        maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
@@ -354,7 +433,10 @@ fun ChatBubble(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            Icons.Default.PrecisionManufacturing,
+                            if (message.providerUsed == AiProvider.POOLSIDE || message.sender == "poolside")
+                                Icons.Default.Bolt
+                            else
+                                Icons.Default.PrecisionManufacturing,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
@@ -377,6 +459,25 @@ fun ChatBubble(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    if (!isUser) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = if (message.providerUsed == AiProvider.POOLSIDE || message.sender == "poolside")
+                                    "⚡ poolside/laguna-xs-2.1"
+                                else
+                                    "✨ gemini-3.6-flash",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+
                     Text(
                         text = message.text,
                         style = MaterialTheme.typography.bodyMedium,
@@ -423,6 +524,23 @@ fun ChatBubble(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(if (cmd.play) "เปิดวิทยุตอนนี้" else "ปิดวิทยุตอนนี้")
+                                }
+                            }
+                            is AppActionCommand.PriceUpdated,
+                            is AppActionCommand.PriceAdded,
+                            is AppActionCommand.PriceDeleted -> {
+                                FilledTonalButton(
+                                    onClick = { onActionClick(AppActionCommand.Navigate(ScreenDestination.PRODUCT_PRICES)) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Inventory,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("เปิดดูตารางราคาสินค้า & ค่าแรง")
                                 }
                             }
                         }
